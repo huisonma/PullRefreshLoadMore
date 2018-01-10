@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="PullRefreshLoadMoreLayout">
+        <attr name="isAutoLoadMore" format="boolean" />
+        <attr name="allowLoadMore" format="boolean" />
+    </declare-styleable>
+</resources>

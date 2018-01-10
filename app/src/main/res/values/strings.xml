@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">PullRefreshLoadMore</string>
+    <string name="content">这里需要了解下Andorid事件的分发机制。事件分发一般是针对一组事件，即ACTION_DOWN > ACTION_UP 或 ACTION_DOWN > ACTION_MOVE... >ACTION_UP，其中涉及事件分发的主要方法有 dispatchTouchEvent(MotionEvent event)、onInterceptTouchEvent(MotionEvent event) (ViewGroup独有，View没有)、onTouchEvent(MotionEvent event)，而且事件分发是由上向下传递的，即先到父View，再到子View，这里简单以 ViewGroup内包裹一个View为例，大致分析下其事件的分发流程：（忽略Activity，Window的传递）
+
+    事件首先会传递到ViewGroup.dispatchTouchEvent(MotionEvent event)，然后会判断ViewGroup.onInterceptTouchEvent(MotionEvent event)的返回值。 1.如果返回为false，即不拦截，事件则会传递给View.dispatchTouchEvent(MotionEvent event)，由于这里View没有子View了，事件则传递给该View的View.onTouchEvent(MotionEvent event)处理，如果View.onTouchEvent(MotionEvent event)没有消耗该事件，则该事件会返回给ViewGroup.onTouchEvent(MotionEvent event)处理，如果View.onTouchEvent(MotionEvent event)消耗了该事件，则该事件不会再返回给ViewGroup，本次事件分发结束。2.如果ViewGroup.onInterceptTouchEvent(MotionEvent event)返回值为ture，即拦截事件，则事件将由ViewGroup.onTouchEvent(MotionEvent event)处理，本次事件分发结束。3.即使事件被ViewGroup拦截了，View也可以阻止ViewGroup对事件的拦截。可以通过getParent().requestDisallowInterceptTouchEvent(true)。下面为流程图。</string>
+</resources>
