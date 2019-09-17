@@ -1,7 +1,7 @@
-package com.huison.scrollnotify.ui;
+package com.huison.widget.refresh;
 
 /**
- * Created by huison on 2018/1/9.
+ * Created by huisonma on 2018/1/9.
  */
 
 public interface IHeader {

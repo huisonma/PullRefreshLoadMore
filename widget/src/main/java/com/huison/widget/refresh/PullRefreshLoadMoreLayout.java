@@ -1,4 +1,4 @@
-package com.huison.scrollnotify.ui;
+package com.huison.widget.refresh;
 
 import android.animation.ValueAnimator;
 import android.content.Context;
@@ -15,27 +15,25 @@ import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
 
-import com.huison.scrollnotify.R;
+import com.huison.widget.R;
 
 /**
- * Created by huison on 2018/1/9.
+ * Created by huisonma on 2018/1/9.
  */
 
-public class PullRefreshLoadMoreLayout extends FrameLayout implements TouchHelperBase.OnScrollListener {
+public class PullRefreshLoadMoreLayout extends FrameLayout implements ITouchHelper.OnScrollListener {
 
-    private static final String TAG = "PullRefreshLoadMore";
+    private static final float MOVE_FACTOR = 0.3f;
+    private static final int SCROLL_ANIMATOR_DURATION = 100;
 
-    private static final float kMoveFactor = 0.3f;
-    private static final int kDuration = 100;
-
-    private FrameLayout headerVG;
+    private FrameLayout headerContainer;
     private LayoutParams headerParams;
-    private FrameLayout footerVG;
+    private FrameLayout footerContainer;
     private LayoutParams footerParams;
     private IHeader header;
     private IFooter footer;
 
-    private int height;
+    private int totalHeight;
     private int headerHeight;
     private int footerHeight;
     private int touchSlop;
@@ -47,9 +45,13 @@ public class PullRefreshLoadMoreLayout extends FrameLayout implements TouchHelpe
     private boolean isAutoLoadMore;
     private boolean allowLoadMore;
 
-    private TouchHelperBase touchHelper;
+    private boolean isFirstLayout = true;
+
+    private ITouchHelper touchHelper;
     private OnRefreshLoadMoreListener listener;
 
+    private boolean intercept;
+    private float lastInterceptY;
 
     public PullRefreshLoadMoreLayout(@NonNull Context context) {
         this(context, null);
@@ -72,55 +74,53 @@ public class PullRefreshLoadMoreLayout extends FrameLayout implements TouchHelpe
     private void init(Context context) {
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
 
-        headerVG = new FrameLayout(context);
+        headerContainer = new FrameLayout(context);
         headerParams = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-        headerVG.setLayoutParams(headerParams);
-        addView(headerVG, headerParams);
+        headerContainer.setLayoutParams(headerParams);
+        addView(headerContainer, headerParams);
 
-        footerVG = new FrameLayout(context);
+        footerContainer = new FrameLayout(context);
         footerParams = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-        footerVG.setLayoutParams(footerParams);
-        addView(footerVG, footerParams);
+        footerContainer.setLayoutParams(footerParams);
+        addView(footerContainer, footerParams);
     }
-
-    private boolean isFirst = true;
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-        if (changed && isFirst) {
-            int childCount = getChildCount();
-            for (int index = 0; index < childCount; index++) {
-                View child = getChildAt(index);
-                if (child instanceof RecyclerView) {
-                    childView = child;
-                    touchHelper = new RecyclerViewTouchHelper((RecyclerView) childView, this);
-                    break;
-                } else if (child instanceof ListView) {
-                    childView = child;
-                    touchHelper = new ListViewTouchHelper((ListView) childView, this);
-                    break;
-                } else if (child instanceof ScrollView) {
-                    childView = child;
-                    touchHelper = new ScrollViewTouchHelper((ScrollView) childView);
-                    break;
-                }
-            }
+        if (changed && isFirstLayout) {
+            initLayout();
 
-            height = getHeight();
-            headerHeight = headerVG.getHeight();
-            headerParams.topMargin = -headerHeight;
-            headerVG.setLayoutParams(headerParams);
-            footerHeight = footerVG.getHeight();
-            footerParams.topMargin = height;
-            footerVG.setLayoutParams(footerParams);
-
-            isFirst = false;
+            isFirstLayout = false;
         }
     }
 
-    private boolean intercept;
-    private float lastInterceptY;
+    private void initLayout() {
+        for (int index = 0; index < getChildCount(); index++) {
+            View child = getChildAt(index);
+            if (child instanceof RecyclerView) {
+                childView = child;
+                touchHelper = new RecyclerViewTouchHelper((RecyclerView) childView, this);
+                break;
+            } else if (child instanceof ListView) {
+                childView = child;
+                touchHelper = new ListViewTouchHelper((ListView) childView, this);
+                break;
+            } else if (child instanceof ScrollView) {
+                childView = child;
+                touchHelper = new ScrollViewTouchHelper((ScrollView) childView);
+                break;
+            }
+        }
+
+        totalHeight = getHeight();
+        headerHeight = headerContainer.getHeight();
+        headerParams.topMargin = -headerHeight;
+        headerContainer.setLayoutParams(headerParams);
+        footerHeight = footerContainer.getHeight();
+        footerParams.topMargin = totalHeight;
+        footerContainer.setLayoutParams(footerParams);
+    }
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
@@ -134,8 +134,8 @@ public class PullRefreshLoadMoreLayout extends FrameLayout implements TouchHelpe
                     intercept = false;
                 } else {
                     boolean isHeaderShow = headerParams.topMargin > -headerHeight;
-                    boolean isFooterShow = footerParams.topMargin < height;
-                    intercept = touchHelper != null && touchHelper.judgeIntercept(curInterceptY, lastInterceptY, isHeaderShow, isFooterShow, allowLoadMore);
+                    boolean isFooterShow = footerParams.topMargin < totalHeight;
+                    intercept = touchHelper != null && touchHelper.onIntercept(curInterceptY, lastInterceptY, isHeaderShow, isFooterShow, allowLoadMore);
                 }
                 break;
             case MotionEvent.ACTION_UP:
@@ -164,7 +164,7 @@ public class PullRefreshLoadMoreLayout extends FrameLayout implements TouchHelpe
                     if (isRefreshing || isLoadMore) {
                         break;
                     }
-                    moveDis = moveDis * kMoveFactor;
+                    moveDis = moveDis * MOVE_FACTOR;
 
                     if (touchHelper.isContentSlideToTop()) {
                         updateHeaderMargin(moveDis);
@@ -193,13 +193,13 @@ public class PullRefreshLoadMoreLayout extends FrameLayout implements TouchHelpe
                         }
                     } else {
                         if (touchHelper.isContentSlideToBottom()) {
-                            if (footerParams.topMargin > height - footerHeight) {
-                                scrollFooterByAnimator(false, footerParams.topMargin, height);
+                            if (footerParams.topMargin > totalHeight - footerHeight) {
+                                scrollFooterByAnimator(false, footerParams.topMargin, totalHeight);
                                 if (footer != null) {
                                     footer.onPullToLoadMore(moveDis);
                                 }
                             } else {
-                                scrollFooterByAnimator(false, footerParams.topMargin, height - footerHeight);
+                                scrollFooterByAnimator(false, footerParams.topMargin, totalHeight - footerHeight);
                                 if (footer != null) {
                                     footer.onLoadMore();
                                 }
@@ -219,7 +219,7 @@ public class PullRefreshLoadMoreLayout extends FrameLayout implements TouchHelpe
     @Override
     public void onScrollToBottom() {
         if (isAutoLoadMore && allowLoadMore && !isLoadMore && !intercept) {
-            scrollFooterByAnimator(true, height, height - footerHeight);
+            scrollFooterByAnimator(true, totalHeight, totalHeight - footerHeight);
             if (listener != null) {
                 listener.onLoadMore();
             }
@@ -230,7 +230,7 @@ public class PullRefreshLoadMoreLayout extends FrameLayout implements TouchHelpe
     private void updateHeaderMargin(float moveDis) {
         moveDis = moveDis < 0 ? 0 : moveDis;
         headerParams.topMargin = (int) (-headerHeight + moveDis);
-        headerVG.setLayoutParams(headerParams);
+        headerContainer.setLayoutParams(headerParams);
 
         setChildViewTopMargin((int) moveDis);
 
@@ -251,8 +251,8 @@ public class PullRefreshLoadMoreLayout extends FrameLayout implements TouchHelpe
 
     private void updateFooterMargin(float moveDis) {
         moveDis = moveDis > 0 ? 0 : moveDis;
-        footerParams.topMargin = (int) (height + moveDis);
-        footerVG.setLayoutParams(footerParams);
+        footerParams.topMargin = (int) (totalHeight + moveDis);
+        footerContainer.setLayoutParams(footerParams);
 
         setChildViewBottomMargin((int) Math.abs(moveDis));
         scrollContentToBottom((int) -moveDis);
@@ -284,15 +284,16 @@ public class PullRefreshLoadMoreLayout extends FrameLayout implements TouchHelpe
 
     private void scrollHeaderByAnimator(float startY, float endY) {
         ValueAnimator animator = ValueAnimator.ofFloat(startY, endY);
-        animator.setDuration(kDuration);
+        animator.setDuration(SCROLL_ANIMATOR_DURATION);
         animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 float floatValue = (float) animation.getAnimatedValue();
                 headerParams.topMargin = (int) floatValue;
-                headerVG.setLayoutParams(headerParams);
+                headerContainer.setLayoutParams(headerParams);
 
-                setChildViewTopMargin((int) (headerHeight + floatValue));
+                int topMargin = (int) (headerHeight + floatValue);
+                setChildViewTopMargin(topMargin);
             }
         });
         animator.start();
@@ -300,15 +301,15 @@ public class PullRefreshLoadMoreLayout extends FrameLayout implements TouchHelpe
 
     private void scrollFooterByAnimator(final boolean isAuto, float startY, float endY) {
         ValueAnimator animator = ValueAnimator.ofFloat(startY, endY);
-        animator.setDuration(kDuration);
+        animator.setDuration(SCROLL_ANIMATOR_DURATION);
         animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 float floatValue = (float) animation.getAnimatedValue();
                 footerParams.topMargin = (int) floatValue;
-                footerVG.setLayoutParams(footerParams);
+                footerContainer.setLayoutParams(footerParams);
 
-                int bottomMargin = (int) (height - floatValue);
+                int bottomMargin = (int) (totalHeight - floatValue);
                 setChildViewBottomMargin(bottomMargin);
                 if (isAuto) {
                     scrollContentToBottom(bottomMargin);
@@ -337,17 +338,29 @@ public class PullRefreshLoadMoreLayout extends FrameLayout implements TouchHelpe
     }
 
     public void setHeader(IHeader header) {
-        if (header != null && header instanceof View) {
+        if (header instanceof View) {
             this.header = header;
-            headerVG.addView((View) header);
+            headerContainer.addView((View) header);
         }
     }
 
+    public void setDefaultHeader(int height) {
+        LoadTextHeader header = new LoadTextHeader(getContext());
+        header.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, height));
+        setHeader(header);
+    }
+
     public void setFooter(IFooter footer) {
-        if (footer != null && footer instanceof View) {
+        if (footer instanceof View) {
             this.footer = footer;
-            footerVG.addView((View) footer);
+            footerContainer.addView((View) footer);
         }
+    }
+
+    public void setDefaultFooter(int height) {
+        LoadTextFooter footer = new LoadTextFooter(getContext());
+        footer.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, height));
+        setFooter(footer);
     }
 
     public void endRefreshing() {
@@ -360,9 +373,16 @@ public class PullRefreshLoadMoreLayout extends FrameLayout implements TouchHelpe
 
     public void endLoadMore() {
         isLoadMore = false;
-        scrollFooterByAnimator(false, height - footerHeight, height);
+        scrollFooterByAnimator(false, totalHeight - footerHeight, totalHeight);
         if (footer != null) {
             footer.onLoadMoreEnd();
         }
+    }
+
+    public interface OnRefreshLoadMoreListener {
+
+        void onRefresh();
+
+        void onLoadMore();
     }
 }

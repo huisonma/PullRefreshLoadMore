@@ -1,4 +1,4 @@
-package com.huison.scrollnotify.ui;
+package com.huison.widget.refresh;
 
 import android.animation.ValueAnimator;
 import android.content.Context;
@@ -9,7 +9,7 @@ import android.view.Gravity;
 import android.view.animation.LinearInterpolator;
 
 /**
- * Created by huison on 2018/1/9.
+ * Created by huisonma on 2018/1/9.
  */
 
 public class LoadTextHeader extends AppCompatTextView implements IHeader {
@@ -48,11 +48,11 @@ public class LoadTextHeader extends AppCompatTextView implements IHeader {
     @Override
     public void onRefreshing() {
         setText("刷新中...");
-        animator = ValueAnimator.ofFloat(100, 0, -100, 0);
+        animator = ValueAnimator.ofFloat(0, 30, 0, -30, 0);
         animator.setDuration(800);
         animator.setInterpolator(new LinearInterpolator());
         animator.setRepeatCount(ValueAnimator.INFINITE);
-        animator.setRepeatMode(ValueAnimator.REVERSE);
+        animator.setRepeatMode(ValueAnimator.RESTART);
         animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {

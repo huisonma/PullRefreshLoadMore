@@ -1,19 +1,19 @@
-package com.huison.scrollnotify.ui;
+package com.huison.widget.refresh;
 
 import android.view.View;
 import android.widget.AbsListView;
 import android.widget.ListView;
 
 /**
- * Created by huison on 2018/1/9.
+ * Created by huisonma on 2018/1/9.
  */
 
-public class ListViewTouchHelper implements TouchHelperBase, AbsListView.OnScrollListener {
+final class ListViewTouchHelper implements ITouchHelper, AbsListView.OnScrollListener {
 
     private ListView lv;
     private OnScrollListener listener;
 
-    public ListViewTouchHelper(ListView lv, OnScrollListener listener) {
+    ListViewTouchHelper(ListView lv, OnScrollListener listener) {
         this.listener = listener;
         this.lv = lv;
         this.lv.setOnScrollListener(this);
@@ -65,7 +65,7 @@ public class ListViewTouchHelper implements TouchHelperBase, AbsListView.OnScrol
     }
 
     @Override
-    public boolean judgeIntercept(float curInterceptY, float lastInterceptY, boolean isHeaderShow, boolean isFooterShow, boolean allowLoadMore) {
+    public boolean onIntercept(float curInterceptY, float lastInterceptY, boolean isHeaderShow, boolean isFooterShow, boolean allowLoadMore) {
         boolean intercept;
 
         int firstVisiblePos = lv.getFirstVisiblePosition();

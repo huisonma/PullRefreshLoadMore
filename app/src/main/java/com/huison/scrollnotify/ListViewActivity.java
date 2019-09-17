@@ -9,20 +9,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.huison.scrollnotify.ui.LoadTextFooter;
-import com.huison.scrollnotify.ui.LoadTextHeader;
-import com.huison.scrollnotify.ui.OnRefreshLoadMoreListener;
-import com.huison.scrollnotify.ui.PullRefreshLoadMoreLayout;
+import com.huison.widget.refresh.PullRefreshLoadMoreLayout;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by huison on 2018/1/10.
+ * Created by huisonma on 2018/1/10.
  */
 
 public class ListViewActivity extends AppCompatActivity {
@@ -38,14 +34,10 @@ public class ListViewActivity extends AppCompatActivity {
 
         list.addAll(MainActivity.items);
 
-        LoadTextHeader loadTextHeader = new LoadTextHeader(this);
-        loadTextHeader.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, 200));
-        LoadTextFooter loadTextFooter = new LoadTextFooter(this);
-        loadTextFooter.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, 200));
-        final PullRefreshLoadMoreLayout pullRefreshLayout = (PullRefreshLoadMoreLayout) findViewById(R.id.layout_pull_refresh_load_more);
-        pullRefreshLayout.setHeader(loadTextHeader);
-        pullRefreshLayout.setFooter(loadTextFooter);
-        pullRefreshLayout.setListener(new OnRefreshLoadMoreListener() {
+        final PullRefreshLoadMoreLayout pullRefreshLayout = findViewById(R.id.layout_pull_refresh_load_more);
+        pullRefreshLayout.setDefaultHeader(getResources().getDimensionPixelOffset(R.dimen.refresh_header_height));
+        pullRefreshLayout.setDefaultFooter(getResources().getDimensionPixelOffset(R.dimen.refresh_footer_height));
+        pullRefreshLayout.setListener(new PullRefreshLoadMoreLayout.OnRefreshLoadMoreListener() {
             @Override
             public void onRefresh() {
                 Handler handler = new Handler(Looper.getMainLooper());
@@ -75,7 +67,7 @@ public class ListViewActivity extends AppCompatActivity {
         });
 
         lvAdapter = new ListViewAdapter();
-        ListView listView = (ListView) findViewById(R.id.list_view);
+        ListView listView = findViewById(R.id.list_view);
         listView.setAdapter(lvAdapter);
         lvAdapter.notifyDataSetChanged();
     }
@@ -115,7 +107,7 @@ public class ListViewActivity extends AppCompatActivity {
             TextView textView;
 
             Holder(View itemView) {
-                textView = (TextView) itemView.findViewById(R.id.text_view);
+                textView = itemView.findViewById(R.id.text_view);
             }
 
             void setData(int position) {

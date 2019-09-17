@@ -1,19 +1,20 @@
-package com.huison.scrollnotify.ui;
+package com.huison.widget.refresh;
 
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 
 /**
- * Created by huison on 2018/1/9.
+ * Created by huisonma on 2018/1/9.
  */
 
-public class RecyclerViewTouchHelper implements TouchHelperBase {
+final class RecyclerViewTouchHelper implements ITouchHelper {
 
     private RecyclerView rv;
+
     private LinearLayoutManager layoutManager;
 
-    public RecyclerViewTouchHelper(RecyclerView rv, final OnScrollListener listener) {
+    RecyclerViewTouchHelper(RecyclerView rv, final OnScrollListener listener) {
         this.rv = rv;
         layoutManager = (LinearLayoutManager) rv.getLayoutManager();
         rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -31,7 +32,7 @@ public class RecyclerViewTouchHelper implements TouchHelperBase {
     }
 
     @Override
-    public boolean judgeIntercept(float curInterceptY, float lastInterceptY, boolean isHeaderShow, boolean isFooterShow, boolean allowLoadMore) {
+    public boolean onIntercept(float curInterceptY, float lastInterceptY, boolean isHeaderShow, boolean isFooterShow, boolean allowLoadMore) {
         boolean intercept;
 
         int firstVisiblePos = layoutManager.findFirstVisibleItemPosition();
